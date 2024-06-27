@@ -490,4 +490,27 @@ router.get("/get-list-cuadre/mensual/:date", async (req, res) => {
   }
 });
 
+router.get("/get-pagos/cuadre/:date", async (req, res) => {
+  try {
+    const { date } = req.params;
+
+    // Buscar documentos por fecha y proyectar solo el campo Pagos
+    const cuadreDiarios = await CuadreDiario.find(
+      { "date.fecha": date },
+      { Pagos: 1, _id: 0 } // Proyectar solo el campo Pagos
+    );
+
+    // Extraer y juntar todos los pagos
+    const allPagos = cuadreDiarios.reduce((acc, doc) => {
+      return acc.concat(doc.Pagos);
+    }, []);
+
+    // Enviar la respuesta con todos los pagos unidos
+    res.json(allPagos);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Error en el servidor: " + error.message);
+  }
+});
+
 export default router;

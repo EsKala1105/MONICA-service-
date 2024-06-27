@@ -9,6 +9,10 @@ import db from "../config/db.js";
 const router = express.Router();
 
 router.post("/add-to-donation", async (req, res) => {
+  // Iniciar una transacción
+  const session = await db.startSession();
+  session.startTransaction();
+
   try {
     const { Ids } = req.body;
     // Actualizar la ubicación de las facturas
@@ -17,14 +21,14 @@ router.post("/add-to-donation", async (req, res) => {
     // Genera la fecha y hora actual usando moment
     const fechaHora = moment().format("YYYY-MM-DD HH:mm");
     for (const facturaId of Ids) {
-      const factura = await Factura.findById(facturaId);
+      const factura = await Factura.findById(facturaId).session(session);
       if (!factura) {
         throw new Error(`Factura no encontrada: ${facturaId}`);
       }
 
       const almacenData = await Almacen.findOne({
         serviceOrder: facturaId,
-      });
+      }).session(session);
       if (!almacenData) {
         throw new Error(
           `Datos de almacen no encontrados para la factura: ${facturaId}`
@@ -34,10 +38,11 @@ router.post("/add-to-donation", async (req, res) => {
       factura.location = 3; // Cambiar la ubicación a 3
       factura.estadoPrenda = "donado";
 
-      await factura.save();
+      await factura.save({ session: session });
       await Almacen.updateMany(
         { serviceOrder: facturaId },
-        { $pull: { serviceOrder: facturaId } }
+        { $pull: { serviceOrder: facturaId } },
+        { session: session }
       );
 
       updatedFacturas.push({
@@ -58,13 +63,17 @@ router.post("/add-to-donation", async (req, res) => {
       },
     });
 
-    await donacion.save();
+    await donacion.save({ session: session });
     // Devolver una respuesta exitosa
     res.status(201).json(updatedFacturas);
+    // Confirmar la transacción
+    await session.commitTransaction();
   } catch (error) {
+    // En caso de error, hacer un rollback de la transacción
+    await session.abortTransaction();
     res
       .status(500)
-      .json({ mensaje: "Error en la operación", error: error.message });
+      .json({ mensaje: "Error en la transacción", error: error.message });
   }
 });
 

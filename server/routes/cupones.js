@@ -182,7 +182,10 @@ router.get("/validar-cupon/:codigoCupon", async (req, res) => {
       if (!promocion) {
         return res
           .status(200)
-          .json({ validacion: false, respuesta: "Promoción no encontrada" });
+          .json({
+            validacion: false,
+            respuesta: "Promoción (NO EXISTE) O (ELIMINADA)",
+          });
       } else {
         // Obtén la fecha actual con Moment.js
         const fechaActual = moment();

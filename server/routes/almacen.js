@@ -11,21 +11,23 @@ const router = express.Router();
 
 // Nueva ruta para realizar ambas operaciones
 router.post("/add-to-warehouse", async (req, res) => {
+  // Iniciar una transacción
+  const session = await db.startSession();
+  session.startTransaction();
   try {
     const { Ids } = req.body;
     // Actualizar la ubicación de las facturas
     const updatedFacturas = [];
     // Agregar las facturas al almacén
     const fechaHora = moment().format("YYYY-MM-DD HH:mm");
-
     for (const facturaId of Ids) {
-      const factura = await Factura.findById(facturaId);
+      const factura = await Factura.findById(facturaId).session(session);
       if (!factura) {
         throw new Error(`Factura no encontrada: ${facturaId}`);
       }
 
       factura.location = 2;
-      await factura.save();
+      await factura.save({ session: session });
 
       updatedFacturas.push({
         ...factura.toObject(),
@@ -44,13 +46,15 @@ router.post("/add-to-warehouse", async (req, res) => {
       },
     });
 
-    await almacenamiento.save();
+    await almacenamiento.save({ session: session });
 
     res.status(200).json(updatedFacturas);
+    await session.commitTransaction();
   } catch (error) {
+    await session.abortTransaction();
     res
       .status(500)
-      .json({ mensaje: "Error en la operación", error: error.message });
+      .json({ mensaje: "Error en la transacción", error: error.message });
   }
 });
 

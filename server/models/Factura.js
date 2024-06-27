@@ -12,6 +12,7 @@ const facturaSchema = new mongoose.Schema({
   },
   Modalidad: String,
   Nombre: String,
+  idCliente: String,
   Items: [
     {
       identificador: String,

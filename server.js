@@ -65,6 +65,7 @@ io.on("connection", (socket) => {
     io.emit("server:updateCodigo", info);
   });
 
+  // UPDATE INFO EN ORDEN DE SERVICIO
   socket.on("client:updateOrder", (info) => {
     const { orderUpdated } = info;
 
@@ -72,6 +73,31 @@ io.on("connection", (socket) => {
     socket.broadcast.emit("server:orderUpdated:child", orderUpdated);
   });
 
+  socket.on("client:updateOrder(ITEMS)", (info) => {
+    socket.broadcast.emit("server:updateOrder(ITEMS)", info);
+  });
+
+  socket.on("client:updateOrder(FINISH_RESERVA)", (info) => {
+    socket.broadcast.emit("server:updateOrder(FINISH_RESERVA)", info);
+  });
+
+  socket.on("client:updateOrder(ENTREGAR)", (info) => {
+    socket.broadcast.emit("server:updateOrder(ENTREGAR)", info);
+  });
+
+  socket.on("client:updateOrder(CANCELAR_ENTREGA)", (info) => {
+    socket.broadcast.emit("server:updateOrder(CANCELAR_ENTREGA)", info);
+  });
+
+  socket.on("client:updateOrder(ANULACION)", (info) => {
+    socket.broadcast.emit("server:updateOrder(ANULACION)", info);
+  });
+
+  socket.on("client:updateOrder(NOTA)", (info) => {
+    socket.broadcast.emit("server:updateOrder(NOTA)", info);
+  });
+
+  // ---------------------------------------- //
   socket.on("client:updateListOrder", (info) => {
     socket.broadcast.emit("server:updateListOrder", info);
     socket.broadcast.emit("server:updateListOrder:child", info);
@@ -141,6 +167,10 @@ io.on("connection", (socket) => {
 
   socket.on("client:cPago", (info) => {
     io.emit("server:cPago", info);
+  });
+
+  socket.on("client:cClientes", (info) => {
+    io.emit("server:cClientes", info);
   });
 
   // Maneja el evento cuando un cliente se desconecta
