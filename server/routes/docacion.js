@@ -9,26 +9,20 @@ import db from "../config/db.js";
 const router = express.Router();
 
 router.post("/add-to-donation", async (req, res) => {
-  // Iniciar una transacción
-  const session = await db.startSession();
-  session.startTransaction();
-
   try {
     const { Ids } = req.body;
-    // Actualizar la ubicación de las facturas
     const updatedFacturas = [];
-
-    // Genera la fecha y hora actual usando moment
     const fechaHora = moment().format("YYYY-MM-DD HH:mm");
+
     for (const facturaId of Ids) {
-      const factura = await Factura.findById(facturaId).session(session);
+      const factura = await Factura.findById(facturaId);
       if (!factura) {
         throw new Error(`Factura no encontrada: ${facturaId}`);
       }
 
       const almacenData = await Almacen.findOne({
         serviceOrder: facturaId,
-      }).session(session);
+      });
       if (!almacenData) {
         throw new Error(
           `Datos de almacen no encontrados para la factura: ${facturaId}`
@@ -38,11 +32,10 @@ router.post("/add-to-donation", async (req, res) => {
       factura.location = 3; // Cambiar la ubicación a 3
       factura.estadoPrenda = "donado";
 
-      await factura.save({ session: session });
+      await factura.save();
       await Almacen.updateMany(
         { serviceOrder: facturaId },
-        { $pull: { serviceOrder: facturaId } },
-        { session: session }
+        { $pull: { serviceOrder: facturaId } }
       );
 
       updatedFacturas.push({
@@ -54,7 +47,6 @@ router.post("/add-to-donation", async (req, res) => {
       });
     }
 
-    // Crea un nuevo registro de Donacion con los IDs y la fecha generada
     const donacion = new Donacion({
       serviceOrder: Ids,
       donationDate: {
@@ -63,17 +55,13 @@ router.post("/add-to-donation", async (req, res) => {
       },
     });
 
-    await donacion.save({ session: session });
-    // Devolver una respuesta exitosa
+    await donacion.save();
+
     res.status(201).json(updatedFacturas);
-    // Confirmar la transacción
-    await session.commitTransaction();
   } catch (error) {
-    // En caso de error, hacer un rollback de la transacción
-    await session.abortTransaction();
     res
       .status(500)
-      .json({ mensaje: "Error en la transacción", error: error.message });
+      .json({ mensaje: "Error en el proceso", error: error.message });
   }
 });
 

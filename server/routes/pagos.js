@@ -51,9 +51,6 @@ router.get("/get-pagos", async (req, res) => {
 
 // Ruta para agregar un nuevo registro de pago
 router.post("/add-pago", async (req, res) => {
-  const session = await db.startSession();
-  session.startTransaction(); // Comienza la transacción
-
   try {
     // Obtener los datos del cuerpo de la solicitud
     const { idOrden, date, metodoPago, total, idUser, isCounted } = req.body;
@@ -71,20 +68,15 @@ router.post("/add-pago", async (req, res) => {
     // Validar los datos del nuevo pago
     await nuevoPago.validate();
 
-    // Guardar el nuevo pago en la base de datos dentro de la transacción
-    const pagoGuardado = await nuevoPago.save({ session }, { _id: 1 });
+    // Guardar el nuevo pago en la base de datos
+    const pagoGuardado = await nuevoPago.save({ _id: 1 });
 
+    // Actualizar la factura con el nuevo pago
     const facturaActualizada = await Factura.findByIdAndUpdate(
       idOrden,
       { $addToSet: { listPago: pagoGuardado._id } },
-      { new: true, select: "Modalidad Nombre codRecibo _id", session } // Pasar la sesión de transacción
+      { new: true, select: "Modalidad Nombre codRecibo _id" }
     );
-
-    // Confirmar la transacción
-    await session.commitTransaction();
-
-    // Finalizar la sesión
-    session.endSession();
 
     // Enviar la respuesta al cliente con el pago guardado
     res.json({
@@ -105,9 +97,6 @@ router.post("/add-pago", async (req, res) => {
     });
   } catch (error) {
     console.error("Error al editar el pago:", error);
-    await session.abortTransaction(); // Abortar la transacción en caso de error
-    session.endSession(); // Finalizar la sesión
-
     res
       .status(500)
       .json({ mensaje: "Error al editar el pago", error: error.message });
