@@ -5,6 +5,6 @@ cls
 
 c:
 cd\
-cd Program Files\fainess\server
+cd Eskala\service
 @pm2 start server.js
 goto End
