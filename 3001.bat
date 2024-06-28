@@ -5,6 +5,6 @@ cls
 
 c:
 cd\
-cd Eskala\service
+cd Eskala\MONICA-service-
 @pm2 start server.js
 goto End
